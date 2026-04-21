@@ -1,14 +1,18 @@
 // api/calendar.js — Vercel Serverless Function
-// Proxy seguro para criar eventos no Google Agenda via Claude MCP
 
 export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método não permitido' });
   }
 
   const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
   if (!ANTHROPIC_API_KEY) {
-    return res.status(500).json({ error: 'Chave da API não configurada' });
+    return res.status(500).json({ error: 'ANTHROPIC_API_KEY não configurada no Vercel' });
   }
 
   try {
@@ -23,7 +27,7 @@ export default async function handler(req, res) {
         'anthropic-beta': 'mcp-client-2025-04-04',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 1000,
         system: system || 'Você gerencia o Google Agenda. Execute a ação e confirme com o eventId em JSON puro.',
         messages: [{ role: 'user', content: prompt }],
@@ -38,9 +42,15 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
+
+    if (!response.ok) {
+      console.error('Erro Anthropic Calendar:', data);
+      return res.status(response.status).json({ error: data?.error?.message || 'Erro na API', detail: data });
+    }
+
     return res.status(200).json(data);
   } catch (error) {
     console.error('Erro ao chamar Calendar:', error);
-    return res.status(500).json({ error: 'Erro ao conectar com Google Agenda' });
+    return res.status(500).json({ error: 'Erro interno: ' + error.message });
   }
 }
