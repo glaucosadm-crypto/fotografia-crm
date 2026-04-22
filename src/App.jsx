@@ -35,13 +35,34 @@ const saveData = d => { try { localStorage.setItem(KEY,JSON.stringify(d)); } cat
 
 // ─── API CALLS (seguras via /api/) ────────────────────────────────────────────
 async function callAI(messages, system) {
-  const res  = await fetch("/api/claude", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({messages,system}) });
-  const data = await res.json();
-  async function callAI(messages, system) {
-  const res  = await fetch("/api/claude", ...
-    throw new Error(data.error || `Erro ${res.status}`);
+  const res = await fetch("/api/claude", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages, system })
+  });
+
+  let data;
+  try {
+    data = await res.json();
+  } catch(e) {
+    throw new Error("Resposta inválida do servidor");
   }
-  return (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n") || "Sem resposta.";
+
+  if (data.error) {
+    const msg = typeof data.error === "string" ? data.error : JSON.stringify(data.error);
+    throw new Error(msg);
+  }
+
+  if (!res.ok) {
+    throw new Error(`Erro ${res.status}`);
+  }
+
+  const texto = (data.content || [])
+    .filter(b => b.type === "text")
+    .map(b => b.text)
+    .join("\n");
+
+  return texto || "Sem resposta da IA.";
 }
 
 async function callCalendar(prompt) {
