@@ -37,7 +37,8 @@ const saveData = d => { try { localStorage.setItem(KEY,JSON.stringify(d)); } cat
 async function callAI(messages, system) {
   const res  = await fetch("/api/claude", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({messages,system}) });
   const data = await res.json();
-  if (!res.ok || data.error) {
+  async function callAI(messages, system) {
+  const res  = await fetch("/api/claude", ...
     throw new Error(data.error || `Erro ${res.status}`);
   }
   return (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n") || "Sem resposta.";
